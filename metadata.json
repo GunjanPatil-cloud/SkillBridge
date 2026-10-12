@@ -1,0 +1,6 @@
+{
+  "name": "SkillBridge — Student Freelance Marketplace",
+  "description": "Dual-role student marketplace with buyer/seller switching, seller onboarding, gigs & project bidding, Razorpay premium subscriptions, n8n automation, and 20-point security audit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
