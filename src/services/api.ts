@@ -163,6 +163,32 @@ export const api = {
     });
   },
 
+  async updateUserProfile(data: {
+    fullName?: string;
+    email?: string;
+    avatarUrl?: string;
+    collegeName?: string;
+    graduationYear?: number;
+    major?: string;
+    bio?: string;
+    hourlyRate?: number;
+    skills?: string[];
+    portfolioUrl?: string;
+    githubUrl?: string;
+    linkedinUrl?: string;
+  }) {
+    return request<{
+      success: boolean;
+      message: string;
+      user: User;
+      sellerProfile: SellerProfile | null;
+      subscription: SellerSubscription | null;
+    }>('/api/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   async getSellers(params?: { search?: string; skill?: string; sort?: string }) {
     const q = new URLSearchParams(params as any).toString();
     return request<{ sellers: (SellerProfile & { fullName: string; avatarUrl: string })[] }>(

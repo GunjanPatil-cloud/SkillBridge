@@ -11,6 +11,7 @@ import { ProjectBiddingView } from './views/ProjectBiddingView';
 import { SellerDashboardView } from './views/SellerDashboardView';
 import { OrdersView } from './views/OrdersView';
 import { SubscriptionsView } from './views/SubscriptionsView';
+import { EditProfileView } from './views/EditProfileView';
 
 import { AuthModal } from './components/AuthModal';
 import { SellerOnboardingModal } from './components/SellerOnboardingModal';
@@ -313,6 +314,22 @@ export default function App() {
                   setSubscription(sub);
                   showToast('Subscription updated.');
                 }}
+              />
+            )}
+
+            {currentView === 'edit-profile' && (
+              <EditProfileView
+                currentUser={currentUser}
+                sellerProfile={sellerProfile}
+                subscription={subscription}
+                onProfileUpdated={(updatedUser, updatedSellerProfile, updatedSub) => {
+                  setCurrentUser(updatedUser);
+                  setSellerProfile(updatedSellerProfile);
+                  if (updatedSub) setSubscription(updatedSub);
+                  showToast('Profile updated successfully!');
+                }}
+                onOpenOnboarding={() => setShowOnboardingModal(true)}
+                onSwitchToSeller={() => handleSwitchRole('seller')}
               />
             )}
           </>

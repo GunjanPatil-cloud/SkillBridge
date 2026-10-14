@@ -12,6 +12,7 @@ import {
   LogIn,
   UserPlus,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 import { User, SellerProfile, SellerSubscription } from '../types';
 
@@ -373,6 +374,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                           My Orders & Deliveries
                         </button>
 
+                        <button
+                          onClick={() => setCurrentView('edit-profile')}
+                          className="w-full text-left px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                        >
+                          <UserCog className="w-3.5 h-3.5 text-emerald-600" />
+                          Edit Profile
+                        </button>
+
                         <div className="my-1 border-t border-slate-100"></div>
 
                         <button
@@ -413,14 +422,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           Projects
         </button>
         {isLoggedIn && (
-          <button
-            onClick={() => setCurrentView('orders')}
-            className={`text-xs font-semibold px-2 py-1 rounded cursor-pointer ${
-              currentView === 'orders' ? 'text-emerald-700 font-bold' : 'text-slate-600'
-            }`}
-          >
-            Orders
-          </button>
+          <>
+            <button
+              onClick={() => setCurrentView('orders')}
+              className={`text-xs font-semibold px-2 py-1 rounded cursor-pointer ${
+                currentView === 'orders' ? 'text-emerald-700 font-bold' : 'text-slate-600'
+              }`}
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => setCurrentView('edit-profile')}
+              className={`text-xs font-semibold px-2 py-1 rounded cursor-pointer ${
+                currentView === 'edit-profile' ? 'text-emerald-700 font-bold' : 'text-slate-600'
+              }`}
+            >
+              Profile
+            </button>
+          </>
         )}
         {isLoggedIn && isSeller && (
           <button
