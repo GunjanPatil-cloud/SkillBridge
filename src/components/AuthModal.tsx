@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { signInWithGoogleFirebase, isFirebaseConfigured } from '../services/firebase';
 import { User, SellerProfile, SellerSubscription } from '../types';
 
 interface AuthModalProps {
@@ -116,6 +117,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       setError(err.message || 'Sign up failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (isFirebaseConfigured) {
+        const cred = await signInWithGoogleFirebase();
+        const googleUser = cred.user;
+        const res = tab === 'login'
+          ? await api.login({
+              email: googleUser.email || undefined,
+              fullName: googleUser.displayName || undefined,
+              avatarUrl: googleUser.photoURL || undefined,
+            })
+          : await api.signup({
+              email: googleUser.email || `student_${Date.now()}@campus.edu`,
+              fullName: googleUser.displayName || 'Google Student',
+              initialRole,
+              collegeName: collegeName.trim() || undefined,
+              avatarUrl: googleUser.photoURL || undefined,
+            });
+        onSuccess(res.user, res.sellerProfile, res.subscription);
+        onClose();
+      } else {
+        // Graceful Demo / Dev Firebase Google authentication fallback
+        const demoGoogleEmail = 'gunjanpatil545@gmail.com';
+        const demoGoogleName = 'Gunjan Patil';
+        const demoAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+        const res = tab === 'login'
+          ? await api.login({
+              email: demoGoogleEmail,
+              fullName: demoGoogleName,
+              avatarUrl: demoAvatar,
+            })
+          : await api.signup({
+              email: demoGoogleEmail,
+              fullName: demoGoogleName,
+              initialRole,
+              collegeName: collegeName.trim() || 'Campus University',
+              avatarUrl: demoAvatar,
+            });
+        onSuccess(res.user, res.sellerProfile, res.subscription);
+        onClose();
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Google sign-in popup was closed before completing.');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        // popup request cancelled
+      } else {
+        setError(err.message || 'Google Authentication failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -233,6 +290,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 <span>{loading ? 'Logging In...' : 'Log In & View Role Switcher'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <div className="relative flex py-1 items-center">
+                <div className="grow border-t border-slate-200"></div>
+                <span className="shrink mx-3 text-[11px] uppercase font-semibold text-slate-400">or</span>
+                <div className="grow border-t border-slate-200"></div>
+              </div>
+
+              {/* Google Auth with Firebase */}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:border-slate-400"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Continue with Google (Firebase)</span>
               </button>
 
               {/* Quick Persona Logins */}
@@ -380,6 +471,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 <span>{loading ? 'Creating Account...' : 'Create Account & Enable Role Switcher'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <div className="relative flex py-1 items-center">
+                <div className="grow border-t border-slate-200"></div>
+                <span className="shrink mx-3 text-[11px] uppercase font-semibold text-slate-400">or</span>
+                <div className="grow border-t border-slate-200"></div>
+              </div>
+
+              {/* Google Auth with Firebase for Sign Up */}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:border-slate-400"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Sign up with Google (Firebase)</span>
               </button>
             </form>
           )}

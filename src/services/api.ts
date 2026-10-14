@@ -64,7 +64,7 @@ export const api = {
     }>('/api/auth/me');
   },
 
-  async login(data: { email?: string; personaId?: string }) {
+  async login(data: { email?: string; personaId?: string; fullName?: string; avatarUrl?: string }) {
     const res = await request<{
       success: boolean;
       user: User;
@@ -84,6 +84,7 @@ export const api = {
     fullName: string;
     initialRole?: 'buyer' | 'seller';
     collegeName?: string;
+    avatarUrl?: string;
   }) {
     const res = await request<{
       success: boolean;
