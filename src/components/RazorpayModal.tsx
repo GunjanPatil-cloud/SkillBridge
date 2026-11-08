@@ -71,7 +71,11 @@ export const RazorpayModal: React.FC<RazorpayModalProps> = ({
       }, 1500);
     } catch (err: any) {
       setStep('checkout');
-      setError(err.message || 'Payment verification failed. Please try again.');
+      if (err.status === 401 || err.message?.includes('token missing')) {
+        setError('Please log in or sign up first to purchase a campus subscription.');
+      } else {
+        setError(err.message || 'Payment verification failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

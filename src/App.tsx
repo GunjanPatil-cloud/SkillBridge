@@ -64,7 +64,6 @@ export default function App() {
   const loadUserData = async () => {
     const token = getAuthToken();
     if (!token) {
-      // User starts logged out so they see the Login / Sign Up buttons
       setCurrentUser(null);
       setSellerProfile(null);
       setSubscription(null);
@@ -83,7 +82,6 @@ export default function App() {
         setCurrentView('seller-dashboard');
       }
     } catch (err) {
-      // If token expired or invalid, reset cleanly
       api.logout();
       setCurrentUser(null);
     } finally {
@@ -124,24 +122,6 @@ export default function App() {
       } else {
         alert(err.message || 'Failed to switch role');
       }
-    }
-  };
-
-  const handleSwitchDemoUser = async (userId: string) => {
-    try {
-      const res = await api.switchDemoUser(userId);
-      setCurrentUser(res.user);
-      setSellerProfile(res.sellerProfile);
-      setSubscription(res.subscription);
-
-      if (res.user.activeRole === 'seller') {
-        setCurrentView('seller-dashboard');
-      } else {
-        setCurrentView('marketplace');
-      }
-      showToast(`Switched active user to ${res.user.fullName} (${res.user.activeRole.toUpperCase()} mode)`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to switch demo user');
     }
   };
 
@@ -206,7 +186,6 @@ export default function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onSwitchRole={handleSwitchRole}
-        onSwitchDemoUser={handleSwitchDemoUser}
         onOpenOnboarding={() => setShowOnboardingModal(true)}
         onOpenAuth={initialTab => {
           setAuthModalTab(initialTab);
@@ -307,6 +286,12 @@ export default function App() {
               <SubscriptionsView
                 currentSubscription={subscription}
                 onOpenRazorpay={plan => {
+                  if (!currentUser) {
+                    setAuthModalTab('signup');
+                    setShowAuthModal(true);
+                    showToast('Please sign in or create an account first to upgrade your plan.');
+                    return;
+                  }
                   setCheckoutPlan(plan);
                   setShowRazorpayModal(true);
                 }}

@@ -10,6 +10,9 @@ import uuid
 
 Base = declarative_base()
 
+
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(String(128), primary_key=True)  # Firebase UID
@@ -22,6 +25,10 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     seller_profile = relationship("SellerProfile", back_populates="user", uselist=False)
+
+
+
+
 
 class SellerProfile(Base):
     __tablename__ = "seller_profiles"

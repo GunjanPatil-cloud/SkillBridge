@@ -2,7 +2,8 @@
 SkillBridge — Pydantic Schemas with strict input validation
 """
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
+
 from typing import List, Optional
 from datetime import datetime
 

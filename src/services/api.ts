@@ -27,6 +27,8 @@ export function getAuthToken(): string | null {
   return currentToken;
 }
 
+const NETLIFY_FUNCTIONS_BASE = '/.netlify/functions';
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
@@ -61,40 +63,19 @@ export const api = {
       sellerProfile: SellerProfile | null;
       subscription: SellerSubscription | null;
       availableRoles: string[];
-    }>('/api/auth/me');
+    }>(`${NETLIFY_FUNCTIONS_BASE}/auth-me`);
   },
 
-  async login(data: { email?: string; personaId?: string; fullName?: string; avatarUrl?: string }) {
+  async authenticateFirebase(data: { uid?: string; idToken?: string; email?: string; fullName?: string; avatarUrl?: string; initialRole?: 'buyer' | 'seller'; collegeName?: string }) {
     const res = await request<{
       success: boolean;
       user: User;
       sellerProfile: SellerProfile | null;
       subscription: SellerSubscription | null;
       token: string;
-    }>('/api/auth/login', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/auth-login`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
-    setAuthToken(res.token);
-    return res;
-  },
-
-  async signup(data: {
-    email: string;
-    fullName: string;
-    initialRole?: 'buyer' | 'seller';
-    collegeName?: string;
-    avatarUrl?: string;
-  }) {
-    const res = await request<{
-      success: boolean;
-      user: User;
-      sellerProfile: SellerProfile | null;
-      subscription: SellerSubscription | null;
-      token: string;
-    }>('/api/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ action: 'firebase', ...data }),
     });
     setAuthToken(res.token);
     return res;
@@ -103,7 +84,7 @@ export const api = {
   async logout() {
     setAuthToken(null);
     try {
-      await request('/api/auth/logout', { method: 'POST' });
+      await request(`${NETLIFY_FUNCTIONS_BASE}/auth-me`, { method: 'POST' });
     } catch {
       // ignore
     }
@@ -111,27 +92,12 @@ export const api = {
 
   async switchRole(targetRole: 'buyer' | 'seller') {
     return request<{ success: boolean; activeRole: 'buyer' | 'seller'; user: User }>(
-      '/api/auth/switch-role',
+      `${NETLIFY_FUNCTIONS_BASE}/auth-switch-role`,
       {
         method: 'POST',
         body: JSON.stringify({ targetRole }),
       }
     );
-  },
-
-  async switchDemoUser(userId: string) {
-    const res = await request<{
-      success: boolean;
-      user: User;
-      sellerProfile: SellerProfile | null;
-      subscription: SellerSubscription | null;
-      token: string;
-    }>('/api/auth/switch-demo-user', {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
-    setAuthToken(res.token);
-    return res;
   },
 
   // Seller Onboarding & Profile
@@ -151,17 +117,20 @@ export const api = {
       message: string;
       sellerProfile: SellerProfile;
       user: User;
-    }>('/api/sellers/onboard', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/sellers-onboard`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
   async updateSellerProfile(data: Partial<SellerProfile>) {
-    return request<{ success: boolean; sellerProfile: SellerProfile }>('/api/sellers/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; sellerProfile: SellerProfile }>(
+      `${NETLIFY_FUNCTIONS_BASE}/sellers-profile`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async updateUserProfile(data: {
@@ -184,7 +153,7 @@ export const api = {
       user: User;
       sellerProfile: SellerProfile | null;
       subscription: SellerSubscription | null;
-    }>('/api/users/profile', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/users-profile`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -193,7 +162,7 @@ export const api = {
   async getSellers(params?: { search?: string; skill?: string; sort?: string }) {
     const q = new URLSearchParams(params as any).toString();
     return request<{ sellers: (SellerProfile & { fullName: string; avatarUrl: string })[] }>(
-      `/api/sellers${q ? '?' + q : ''}`
+      `${NETLIFY_FUNCTIONS_BASE}/sellers${q ? '?' + q : ''}`
     );
   },
 
@@ -202,7 +171,7 @@ export const api = {
       seller: SellerProfile & { fullName: string; avatarUrl: string };
       gigs: Gig[];
       reviews: Review[];
-    }>(`/api/sellers/${id}`);
+    }>(`${NETLIFY_FUNCTIONS_BASE}/sellers/${id}`);
   },
 
   // Gigs
@@ -220,36 +189,47 @@ export const api = {
         if (v !== undefined && v !== '') q.append(k, String(v));
       });
     }
-    return request<{ gigs: Gig[] }>(`/api/gigs${q.toString() ? '?' + q.toString() : ''}`);
+    return request<{ gigs: Gig[] }>(
+      `${NETLIFY_FUNCTIONS_BASE}/gigs${q.toString() ? '?' + q.toString() : ''}`
+    );
   },
 
   async getGigById(id: string) {
-    return request<{ gig: Gig; reviews: Review[] }>(`/api/gigs/${id}`);
+    return request<{ gig: Gig; reviews: Review[] }>(`${NETLIFY_FUNCTIONS_BASE}/gigs/${id}`);
   },
 
   async createGig(data: Partial<Gig>) {
-    return request<{ success: boolean; gig: Gig }>('/api/gigs', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; gig: Gig }>(
+      `${NETLIFY_FUNCTIONS_BASE}/gigs-create`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async updateGig(id: string, data: Partial<Gig>) {
-    return request<{ success: boolean; gig: Gig }>(`/api/gigs/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; gig: Gig }>(
+      `${NETLIFY_FUNCTIONS_BASE}/gigs/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async deleteGig(id: string) {
-    return request<{ success: boolean; message: string }>(`/api/gigs/${id}`, {
-      method: 'DELETE',
-    });
+    return request<{ success: boolean; message: string }>(
+      `${NETLIFY_FUNCTIONS_BASE}/gigs/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
   },
 
   // Projects & Bidding
   async getProjects() {
-    return request<{ projects: Project[] }>('/api/projects');
+    return request<{ projects: Project[] }>(`${NETLIFY_FUNCTIONS_BASE}/projects-list`);
   },
 
   async createProject(data: {
@@ -260,14 +240,19 @@ export const api = {
     deadlineDays: number;
     requiredSkills: string[];
   }) {
-    return request<{ success: boolean; project: Project }>('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; project: Project }>(
+      `${NETLIFY_FUNCTIONS_BASE}/projects-create`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async getProjectProposals(projectId: string) {
-    return request<{ proposals: Proposal[] }>(`/api/projects/${projectId}/proposals`);
+    return request<{ proposals: Proposal[] }>(
+      `${NETLIFY_FUNCTIONS_BASE}/projects/${projectId}/proposals`
+    );
   },
 
   async submitProposal(
@@ -275,7 +260,7 @@ export const api = {
     data: { bidAmount: number; deliveryDays: number; coverLetter: string }
   ) {
     return request<{ success: boolean; proposal: Proposal }>(
-      `/api/projects/${projectId}/proposals`,
+      `${NETLIFY_FUNCTIONS_BASE}/projects/${projectId}/proposals`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -285,7 +270,7 @@ export const api = {
 
   async acceptProposal(projectId: string, proposalId: string) {
     return request<{ success: boolean; order: Order }>(
-      `/api/projects/${projectId}/accept-proposal`,
+      `${NETLIFY_FUNCTIONS_BASE}/projects/${projectId}/accept-proposal`,
       {
         method: 'POST',
         body: JSON.stringify({ proposalId }),
@@ -296,38 +281,51 @@ export const api = {
   // Orders
   async getOrders(role?: 'buyer' | 'seller') {
     const q = role ? `?role=${role}` : '';
-    return request<{ orders: Order[] }>(`/api/orders${q}`);
+    return request<{ orders: Order[] }>(
+      `${NETLIFY_FUNCTIONS_BASE}/orders${q}`
+    );
   },
 
   async getOrderById(id: string) {
-    return request<{ order: Order; review?: Review }>(`/api/orders/${id}`);
+    return request<{ order: Order; review?: Review }>(
+      `${NETLIFY_FUNCTIONS_BASE}/orders/${id}`
+    );
   },
 
   async createOrder(data: { gigId: string; requirements: string }) {
-    return request<{ success: boolean; order: Order }>('/api/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; order: Order }>(
+      `${NETLIFY_FUNCTIONS_BASE}/orders-create`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async deliverOrder(id: string, data: { deliveryNote: string; attachmentUrl?: string }) {
-    return request<{ success: boolean; order: Order }>(`/api/orders/${id}/deliver`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return request<{ success: boolean; order: Order }>(
+      `${NETLIFY_FUNCTIONS_BASE}/orders/${id}/deliver`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
   },
 
   async updateOrderStatus(id: string, status: string) {
-    return request<{ success: boolean; order: Order }>(`/api/orders/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+    return request<{ success: boolean; order: Order }>(
+      `${NETLIFY_FUNCTIONS_BASE}/orders/${id}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }
+    );
   },
 
   // Reviews
   async submitReview(orderId: string, data: { rating: number; comment: string }) {
     return request<{ success: boolean; review: Review; averageRating: number }>(
-      `/api/orders/${orderId}/review`,
+      `${NETLIFY_FUNCTIONS_BASE}/orders/${orderId}/review`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -340,14 +338,14 @@ export const api = {
     return request<{
       plans: SubscriptionPlan[];
       fairRankingPolicy: { disclaimer: string; factors: string[] };
-    }>('/api/subscriptions/plans');
+    }>(`${NETLIFY_FUNCTIONS_BASE}/subscriptions-plans`);
   },
 
   async getCurrentSubscription() {
     return request<{
       subscription: SellerSubscription | null;
       history: any[];
-    }>('/api/subscriptions/current');
+    }>(`${NETLIFY_FUNCTIONS_BASE}/subscriptions-current`);
   },
 
   async createSubscriptionOrder(planId: string) {
@@ -359,7 +357,7 @@ export const api = {
       keyId: string;
       plan: { id: string; name: string; price: number };
       prefill: { name: string; email: string };
-    }>('/api/subscriptions/create-order', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/subscriptions/create-order`, {
       method: 'POST',
       body: JSON.stringify({ planId }),
     });
@@ -375,7 +373,7 @@ export const api = {
       success: boolean;
       message: string;
       subscription: SellerSubscription;
-    }>('/api/subscriptions/verify-payment', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/subscriptions/verify-payment`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -386,7 +384,7 @@ export const api = {
       success: boolean;
       message: string;
       subscription: SellerSubscription;
-    }>('/api/subscriptions/cancel', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/subscriptions/cancel`, {
       method: 'POST',
     });
   },
@@ -396,7 +394,7 @@ export const api = {
     return request<{
       summary: { total: number; passed: number; failed: number; timestamp: string };
       checks: SecurityCheckItem[];
-    }>('/api/security/run-audit', {
+    }>(`${NETLIFY_FUNCTIONS_BASE}/security-audit`, {
       method: 'POST',
     });
   },
@@ -406,12 +404,12 @@ export const api = {
     return request<{
       logs: AutomationLogItem[];
       config: { n8nWebhookUrl: string; isConfigured: boolean; authHeader: string };
-    }>('/api/automation/logs');
+    }>(`${NETLIFY_FUNCTIONS_BASE}/automation-logs`);
   },
 
   async testAutomationTrigger(eventType: string) {
     return request<{ success: boolean; event: AutomationLogItem }>(
-      '/api/automation/test-trigger',
+      `${NETLIFY_FUNCTIONS_BASE}/automation-test-trigger`,
       {
         method: 'POST',
         body: JSON.stringify({ eventType }),

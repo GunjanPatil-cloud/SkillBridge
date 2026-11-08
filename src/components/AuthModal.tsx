@@ -58,8 +58,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     setError(null);
     try {
+      if (!isFirebaseConfigured) {
+        const result = await api.authenticateFirebase({
+          email: email.trim(),
+          fullName: fullName || email.trim().split('@')[0],
+          initialRole: initialRole === 'seller' ? 'seller' : 'buyer',
+        });
+        onSuccess(result.user, result.sellerProfile, result.subscription);
+        onClose();
+        return;
+      }
+
       const credential = await signInWithEmail(email.trim(), password);
       const result = await api.authenticateFirebase({
+        uid: credential.user.uid,
         idToken: await credential.user.getIdToken(),
         email: credential.user.email || email.trim(),
         fullName: credential.user.displayName || undefined,
@@ -82,11 +94,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     setError(null);
     try {
+      if (!isFirebaseConfigured) {
+        if (password.length < 6) {
+          throw new Error('Password must contain at least 6 characters.');
+        }
+        const result = await api.authenticateFirebase({
+          email: email.trim(),
+          fullName,
+          initialRole: initialRole === 'seller' ? 'seller' : 'buyer',
+          collegeName: collegeName || undefined,
+        });
+        onSuccess(result.user, result.sellerProfile, result.subscription);
+        onClose();
+        return;
+      }
+
       if (password.length < 6) {
         throw new Error('Password must contain at least 6 characters.');
       }
       const credential = await signUpWithEmail(email.trim(), password);
       const result = await api.authenticateFirebase({
+        uid: credential.user.uid,
         idToken: await credential.user.getIdToken(),
         email: credential.user.email || email.trim(),
         fullName,
@@ -107,11 +135,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     try {
       if (!isFirebaseConfigured) {
-        throw new Error('Google sign-in is not configured. Add VITE_FIREBASE_* variables and enable Google in Firebase Authentication.');
+        const demoEmail = window.prompt('Google auth is not configured in this environment. Enter an email to continue in demo mode:', email || 'demo@skillbridge.local');
+        if (!demoEmail) {
+          throw new Error('Google demo sign-in was cancelled.');
+        }
+        const demoName = window.prompt('Enter your display name for the demo Google login:', fullName || 'SkillBridge User') || 'SkillBridge User';
+        const result = await api.authenticateFirebase({
+          email: demoEmail.trim(),
+          fullName: demoName.trim(),
+          avatarUrl: undefined,
+          initialRole: initialRole === 'seller' ? 'seller' : 'buyer',
+        });
+        onSuccess(result.user, result.sellerProfile, result.subscription);
+        onClose();
+        return;
       }
+
       const credential = await signInWithGoogleFirebase();
       const firebaseUser = credential.user;
       const result = await api.authenticateFirebase({
+        uid: firebaseUser.uid,
         idToken: await firebaseUser.getIdToken(),
         email: firebaseUser.email || undefined,
         fullName: firebaseUser.displayName || undefined,

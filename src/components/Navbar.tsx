@@ -23,7 +23,6 @@ interface NavbarProps {
   currentView: string;
   setCurrentView: (view: string) => void;
   onSwitchRole: (targetRole: 'buyer' | 'seller') => void;
-  onSwitchDemoUser: (userId: string) => void;
   onOpenOnboarding: () => void;
   onOpenAuth: (initialTab: 'login' | 'signup') => void;
   onLogout: () => void;
@@ -36,44 +35,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   setCurrentView,
   onSwitchRole,
-  onSwitchDemoUser,
   onOpenOnboarding,
   onOpenAuth,
   onLogout,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showDemoMenu, setShowDemoMenu] = useState(false);
-
   const isLoggedIn = Boolean(currentUser);
   const isSeller = currentUser?.activeRole === 'seller';
   const isPro = subscription?.planId.includes('premium');
-
-  const demoAccounts = [
-    {
-      id: 'user-student-1',
-      name: 'Arjun Sharma',
-      role: 'PRO Seller (IIT Bombay)',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'user-student-2',
-      name: 'Priya Patel',
-      role: 'Free Seller (BITS Pilani)',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'user-buyer-1',
-      name: 'Rohan Mehta',
-      role: 'Buyer (Startup Founder)',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'user-admin-1',
-      name: 'Platform Auditor',
-      role: 'Security Admin',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-    },
-  ];
 
   const handleRoleToggle = () => {
     if (!isLoggedIn) {
@@ -117,38 +86,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <p className="text-[11px] text-slate-500 leading-none">Student Talent Marketplace</p>
               </div>
             </button>
-
-            {/* Role Switcher Pill — VISIBLE ONLY AFTER LOGIN */}
-            {isLoggedIn && (
-              <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 animate-in fade-in duration-200">
-                <button
-                  onClick={() => onSwitchRole('buyer')}
-                  className={`flex items-center gap-1.5 px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
-                    !isSeller
-                      ? 'bg-white text-emerald-800 shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
-                  Buyer View
-                </button>
-                <button
-                  onClick={handleRoleToggle}
-                  className={`flex items-center gap-1.5 px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
-                    isSeller
-                      ? 'bg-emerald-600 text-white shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Briefcase className="w-3.5 h-3.5" />
-                  Seller View
-                  {isPro && isSeller && (
-                    <Crown className="w-3 h-3 text-amber-300 ml-0.5 fill-amber-300" />
-                  )}
-                </button>
-              </div>
-            )}
           </div>
+
+          {/* Role Switcher Pill — VISIBLE ONLY AFTER LOGIN */}
+          {isLoggedIn && (
+            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 animate-in fade-in duration-200">
+              <button
+                onClick={() => onSwitchRole('buyer')}
+                className={`flex items-center gap-1.5 px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                  !isSeller
+                    ? 'bg-white text-emerald-800 shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
+                Buyer View
+              </button>
+              <button
+                onClick={handleRoleToggle}
+                className={`flex items-center gap-1.5 px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                  isSeller
+                    ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                Seller View
+                {isPro && isSeller && (
+                  <Crown className="w-3 h-3 text-amber-300 ml-0.5 fill-amber-300" />
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
@@ -236,7 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Right Action: Logged In (Persona & Avatar) vs Logged Out (Login / Sign Up) */}
+          {/* Right Action: Logged In (User Avatar) vs Logged Out (Login / Sign Up) */}
           <div className="flex items-center gap-3">
             {!isLoggedIn ? (
               // LOGGED OUT ACTIONS: Login & Sign Up buttons
@@ -257,60 +226,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               </div>
             ) : (
-              // LOGGED IN ACTIONS: Persona Quick Switcher & User Avatar
+              // LOGGED IN ACTIONS: User Avatar & Dropdown
               <>
-                {/* Demo User Switcher Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowDemoMenu(!showDemoMenu)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                    title="Switch test persona"
-                  >
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="hidden sm:inline">Persona:</span>
-                    <span className="font-semibold">{currentUser?.fullName.split(' ')[0]}</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </button>
-
-                  {showDemoMenu && (
-                    <div
-                      className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100"
-                      onClick={() => setShowDemoMenu(false)}
-                    >
-                      <div className="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        Switch Test Persona
-                      </div>
-                      {demoAccounts.map(account => (
-                        <button
-                          key={account.id}
-                          onClick={() => onSwitchDemoUser(account.id)}
-                          className={`w-full text-left px-3 py-2 flex items-center gap-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${
-                            currentUser?.id === account.id ? 'bg-emerald-50/70' : ''
-                          }`}
-                        >
-                          <img
-                            src={account.avatar}
-                            alt={account.name}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-bold text-slate-900 truncate">{account.name}</p>
-                              {currentUser?.id === account.id && (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              )}
-                            </div>
-                            <p className="text-[11px] text-slate-500 truncate">{account.role}</p>
-                          </div>
-                        </button>
-                      ))}
-                      <div className="mt-2 pt-2 border-t border-slate-100 px-3 text-[11px] text-slate-400">
-                        Test roles & permissions across Buyer, Seller, and Admin boundaries.
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* User Profile Avatar & Dropdown */}
                 <div className="relative">
                   <button
